@@ -455,16 +455,16 @@
     import bs58 from 'https://esm.sh/bs58@5.0.0';
     import { getWallets } from 'https://esm.sh/@wallet-standard/app@1.1.0';
 
-    const PROGRAM = 'whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc';
-    const SYSTEM_PROGRAM = '11111111111111111111111111111111';
-    const TOKEN_PROGRAM = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
-    const ASSOCIATED_TOKEN_PROGRAM = 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
-    const RENT_SYSVAR = 'SysvarRent111111111111111111111111111111111';
-    const MEMO_PROGRAM = 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr';
-    const MINT_ACCOUNT_SIZE = 82n;
+
+    let PROGRAM = '';
+    let SYSTEM_PROGRAM = '';
+    let TOKEN_PROGRAM = '';
+    let ASSOCIATED_TOKEN_PROGRAM = '';
+    let RENT_SYSVAR = '';
+    let MEMO_PROGRAM = '';
+    let MINT_ACCOUNT_SIZE = 0n;
+
     const walletStore = getWallets();
-    const DEFAULT_MAINNET_RPC = 'https://api.mainnet-beta.solana.com';
-    const DEFAULT_CUSTOM_RPC = 'https://neat-sly-season.solana-mainnet.quiknode.pro/30b97ec4855b78affab8fd57dab48b6d19b76771/';
     const state = { config: {}, pool: null, wallet: null, walletAccount: null, walletName: null, walletAddress: null, bundle: null, transaction: null, transactionSnapshot: null, monitor: null, monitoring: false };
     const $ = id => document.getElementById(id); const text = value => new TextEncoder().encode(value); const bytes = value => value instanceof Uint8Array ? value : bs58.decode(value);
     const log = message => { $('activity').textContent = `[${new Date().toLocaleTimeString()}] ${message}\n` + $('activity').textContent };
@@ -474,15 +474,12 @@
     const readU16 = (data, offset) => data[offset] | data[offset + 1] << 8; const readI32 = (data, offset) => new DataView(data.buffer, data.byteOffset + offset, 4).getInt32(0, true); const readBigInt = (data, offset, bytes) => new DataView(data.buffer, data.byteOffset + offset, bytes).getBigUint64(0, true) + (bytes === 16 ? new DataView(data.buffer, data.byteOffset + offset + 8, 8).getBigUint64(0, true) << 64n : 0n); const publicKey = (data, offset) => bs58.encode(data.slice(offset, offset + 32));
     const setField = (field, value) => { const node = document.querySelector(`[data-field="${field}"]`); if (node) node.textContent = value };
     const validatePool = pool => { if (!pool || pool.owner !== PROGRAM || pool.dataLength !== WHIRLPOOL_DATA_LENGTH) throw new Error('Imported Whirlpool state failed owner or account length validation'); if (pool.tokenA !== pool.tokenMintA || pool.tokenB !== pool.tokenMintB) throw new Error('Imported Whirlpool token mint discrepancy'); if (!pool.address || !pool.tokenMintA || !pool.tokenMintB || !Number.isInteger(pool.tickSpacing)) throw new Error('Imported Whirlpool state is missing required fields'); return pool };
-
-    // Token metadata cache  
+    
     const tokenMetadataCache = new Map();
-    const SOL_MINT = 'So11111111111111111111111111111111111111112';
-    const USDC_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
-    const KNOWN_TOKEN_METADATA = new Map([
-      [SOL_MINT, { symbol: 'SOL', decimals: 9, mint: SOL_MINT }],
-      [USDC_MINT, { symbol: 'USDC', decimals: 6, mint: USDC_MINT }]
-    ]);
+    let SOL_MINT = '';
+    let USDC_MINT = '';
+    const KNOWN_TOKEN_METADATA = new Map();
+
     async function fetchTokenMetadata(mint) {
       if (tokenMetadataCache.has(mint)) return tokenMetadataCache.get(mint);
       if (KNOWN_TOKEN_METADATA.has(mint)) {
@@ -583,8 +580,8 @@
     const validateBundle = bundle => { if (!bundle || bundle.schema !== BUNDLE_SCHEMA || bundle.schemaVersion !== BUNDLE_VERSION) throw new Error(`Unsupported bundle schema; expected ${BUNDLE_SCHEMA} v${BUNDLE_VERSION}`); if (!bundle.bundle?.mint || !bundle.bundle?.pda || !Array.isArray(bundle.bundle.positions)) throw new Error('Bundle JSON is missing bundle identity or positions'); if (!bundle.whirlpool?.address) throw new Error('Bundle JSON is missing Whirlpool identity'); return bundle };
     const bundleDiscrepancies = (payload, currentPool) => { const issues = []; if (currentPool) { compareValues(payload.whirlpool.address, currentPool.address, 'whirlpool.address', issues); compareValues(payload.whirlpool.tokenMintA, currentPool.tokenMintA, 'whirlpool.tokenMintA', issues); compareValues(payload.whirlpool.tokenMintB, currentPool.tokenMintB, 'whirlpool.tokenMintB', issues); compareValues(payload.whirlpool.tickSpacing, currentPool.tickSpacing, 'whirlpool.tickSpacing', issues) } return issues };
 
-    async function loadConfig() { try { const response = await fetch('.env', { cache: 'no-store' }); if (!response.ok) throw new Error(`Unable to load .env (${response.status})`); const raw = await response.text(); state.config = Object.fromEntries(raw.split(/\r?\n/).map(line => line.match(/^([A-Z0-9_]+)=(.*)$/)).filter(Boolean).map(match => [match[1], match[2].trim().replace(/^['"]|['"]$/g, '')])); if (!state.config.DEVNET_RPC) throw new Error('DEVNET_RPC is required'); $('network').value = 'custom'; updateRpc(); $('whirlpool').value = state.config.DEFAULT_WHIRLPOOL_ADDRESS || $('whirlpool').value; $('runtimeStatus').textContent = 'Kit + .env ready'; $('runtimeStatus').className = 'ui rounded-full border border-mint/40 px-3 py-1 text-xs text-mint'; log('Configuration loaded from .env') } catch (error) { $('network').value = 'custom'; updateRpc(); $('runtimeStatus').textContent = 'Config unavailable'; $('runtimeStatus').className = 'ui rounded-full border border-rose-400/40 px-3 py-1 text-xs text-rose-300'; log(`Configuration error: ${error.message}`) } }
-    function updateRpc() { const network = $('network').value; $('rpc').value = network === 'mainnet-beta' ? DEFAULT_MAINNET_RPC : network === 'devnet' ? (state.config.DEVNET_RPC || '') : DEFAULT_CUSTOM_RPC }
+    async function loadConfig() { try { const response = await fetch('.env', { cache: 'no-store' }); if (!response.ok) throw new Error(`Unable to load .env (${response.status})`); const raw = await response.text(); state.config = Object.fromEntries(raw.split(/\r?\n/).map(line => line.match(/^([A-Z0-9_]+)=(.*)$/)).filter(Boolean).map(match => [match[1], match[2].trim().replace(/^['"]|['"]$/g, '')])); const required = ['MAINNET_RPC', 'CUSTOM_RPC', 'DEVNET_RPC', 'DEFAULT_WHIRLPOOL_ADDRESS', 'ORCA_WHIRLPOOL_PROGRAM_ID', 'SYSTEM_PROGRAM_ID', 'TOKEN_PROGRAM_ID', 'ASSOCIATED_TOKEN_PROGRAM_ID', 'RENT_SYSVAR_ID', 'MEMO_PROGRAM_ID', 'MINT_ACCOUNT_SIZE', 'SOL_MINT', 'USDC_MINT']; const missing = required.filter(key => !state.config[key]); if (missing.length) throw new Error(`${missing.join(', ')} ${missing.length === 1 ? 'is' : 'are'} required in .env`); PROGRAM = state.config.ORCA_WHIRLPOOL_PROGRAM_ID; SYSTEM_PROGRAM = state.config.SYSTEM_PROGRAM_ID; TOKEN_PROGRAM = state.config.TOKEN_PROGRAM_ID; ASSOCIATED_TOKEN_PROGRAM = state.config.ASSOCIATED_TOKEN_PROGRAM_ID; RENT_SYSVAR = state.config.RENT_SYSVAR_ID; MEMO_PROGRAM = state.config.MEMO_PROGRAM_ID; MINT_ACCOUNT_SIZE = BigInt(state.config.MINT_ACCOUNT_SIZE); SOL_MINT = state.config.SOL_MINT; USDC_MINT = state.config.USDC_MINT; WRAPPED_SOL_MINT = SOL_MINT; KNOWN_TOKEN_METADATA.set(SOL_MINT, { symbol: 'SOL', decimals: 9, mint: SOL_MINT }); KNOWN_TOKEN_METADATA.set(USDC_MINT, { symbol: 'USDC', decimals: 6, mint: USDC_MINT }); $('network').value = 'custom'; updateRpc(); $('whirlpool').value = state.config.DEFAULT_WHIRLPOOL_ADDRESS; $('runtimeStatus').textContent = 'Kit + .env ready'; $('runtimeStatus').className = 'ui rounded-full border border-mint/40 px-3 py-1 text-xs text-mint'; log('Configuration loaded from .env') } catch (error) { state.config = {}; $('network').value = 'custom'; updateRpc(); $('runtimeStatus').textContent = 'Config unavailable'; $('runtimeStatus').className = 'ui rounded-full border border-rose-400/40 px-3 py-1 text-xs text-rose-300'; log(`Configuration error: ${error.message}`) } }
+    function updateRpc() { const network = $('network').value; $('rpc').value = network === 'mainnet-beta' ? (state.config.MAINNET_RPC || '') : network === 'devnet' ? (state.config.DEVNET_RPC || '') : (state.config.CUSTOM_RPC || '') }
     function phantom() { return window.phantom?.solana?.isPhantom ? window.phantom.solana : window.solana?.isPhantom ? window.solana : null }
     function walletNameSortOrder(name) { const candidate = String(name || '').toLowerCase(); if (candidate.includes('phantom')) return 0; if (candidate.includes('brave')) return 2; if (candidate.includes('solflare')) return 3; return 1 }
     function getInstalledWalletCandidates() { const candidates = []; const seen = new Set(); const register = (walletName, wallet, type, id) => { if (!wallet || !walletName || !walletName.trim()) return; const key = `${type}:${walletName.toLowerCase()}`; if (seen.has(key)) return; seen.add(key); candidates.push({ id: id || `${type}:${walletName.toLowerCase()}`, name: walletName, type, wallet }) }; for (const wallet of walletStore.get() || []) { if (wallet.features?.['standard:connect'] && wallet.features?.['solana:signAndSendTransaction']) register(wallet.name, wallet, 'wallet-standard', `standard:${wallet.name.toLowerCase()}`) }; return candidates.sort((left, right) => walletNameSortOrder(left.name) - walletNameSortOrder(right.name) || left.name.localeCompare(right.name)); }
@@ -642,7 +639,7 @@
     const INCREASE_LIQUIDITY_DISCRIMINATOR = new Uint8Array([0x27, 0x0e, 0x06, 0x2e, 0x01, 0xc4, 0xeb, 0x3f]);
     // Anchor discriminator for increaseLiquidityV2: sha256("global:increaseLiquidityV2")[..8]
     const INCREASE_LIQUIDITY_V2_DISCRIMINATOR = new Uint8Array([0x43, 0x4e, 0xc4, 0x69, 0xd3, 0x19, 0x3e, 0xfc]);
-    const WRAPPED_SOL_MINT = 'So11111111111111111111111111111111111111112';
+    let WRAPPED_SOL_MINT = '';
 
     function createOpenBundledPositionInstruction({ bundledPosition, positionBundle, positionBundleTokenAccount, positionBundleAuthority, whirlpool, funder }, bundleIndex, tickLowerIndex, tickUpperIndex) {
       const data = new Uint8Array(18);
