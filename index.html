@@ -15,13 +15,36 @@
   <meta property="og:title" content="PozzyBundy">
   <meta property="og:description" content="Al Bundys Favorite Liquidity Shoe">
   <meta property="og:url" content="https://bahaxajkgk.github.io/POZZYBUNDY">
-  <meta property="og:image" content="https://bahaxajkgk.github.io/POZZYBUNDY/img/bundy600.png">
+  <meta property="og:image" id="bg" content="https://bahaxajkgk.github.io/POZZYBUNDY/img/bundy600.png">
+  <meta property="og:image" content="https://bahaxajkgk.github.io/POZZYBUNDY/img/app-logo.png">
 
   <!-- App Icons (High resolution PNG recommended for wallet UI) -->
   <link rel="icon" type="image/png" sizes="1099x1025" href="https://github.com/bahaxajkgk/POZZYBUNDY/img/peggybundy.png">
   <link rel="apple-touch-icon" href="https://github.com/bahaxajkgk/POZZYBUNDY/img/faviconKELLY.png">
   
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <script>(function() {
+    const manifest = {
+      "name": "PozzyBundy",
+      "short_name": "PozzyBundy",
+      "icons": [
+        {
+          "src": "./img/app-logo.png",
+          "sizes": "1099x1025",
+          "type": "image/png"
+        }
+      ],
+      "start_url": "/",
+      "display": "standalone"
+    };
+
+    const link = document.createElement('link');
+    link.rel = 'manifest';
+    link.href = 'data:application/manifest+json,' + encodeURIComponent(JSON.stringify(manifest));
+    document.head.appendChild(link);
+  })();</script>
+
   <script>tailwind.config = { theme: { extend: { colors: { ink: '#0d171c', panel: '#15242a', line: '#2a4147', mint: '#62e8c3', teal: '#0d8f78' } } } };</script>
   <style>
     :root {
@@ -184,17 +207,47 @@
       text-overflow: ellipsis;
       overflow: hidden
     }
+
+    body.locked {
+      overflow: hidden
+    }
+
+    app {
+      display: block;
+      visibility: hidden
+    }
+
+    #content-gate {
+      position: fixed;
+      inset: 0;
+      z-index: 2147483647;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100vw;
+      height: 100vh;
+      background: #000 center / cover no-repeat;
+      pointer-events: auto
+    }
   </style>
 </head>
 
 <body class="min-h-screen text-slate-100">
+  <div id="content-gate"></div>
+<!--  
+//#########################################################################################################//
+//#########################################################################################################//
+//#########################################################################################################//
+//# BEGINNING OF HTML TO BE INCLUDED IN APP CONTAINER #####################################################//
+//#########################################################################################################//
+-->
+<app>
   <main class="mx-auto max-w-[1500px] px-4 py-6 sm:px-7 lg:px-10">
     <header class="mb-6 flex flex-col gap-4 border-b border-line pb-5 lg:flex-row lg:items-end lg:justify-between">
       <div>
         <p class="ui mb-1 text-[11px] font-bold uppercase tracking-[.24em] text-mint">Compliant browser studio</p>
-        <h1 class="text-3xl font-bold sm:text-4xl">Orca Whirlpool Position Bundle Studio</h1>
-        <p class="ui mt-2 max-w-3xl text-sm leading-6 text-slate-400">Inspect a Whirlpool, initialize a bundle plan, add
-          adjacent positions, preserve state, and monitor the active range.</p>
+        <h1 class="text-3xl font-bold sm:text-4xl">PozzyBundy </h1>
+        <p class="ui mt-2 max-w-3xl text-sm leading-6 text-slate-400"> Fountains and Green Slime</p>
       </div>
         <div class="ui flex flex-wrap gap-2"><button id="connectWallet" class="action primary">Connect
           wallet</button><button id="audit" class="action secondary" aria-expanded="false"
@@ -383,6 +436,19 @@
       <p id="walletModalMessage" class="mt-4 text-xs text-slate-400"></p>
     </div>
   </div>
+
+</app>
+
+<!-- 
+//#########################################################################################################//
+//# END OF HTML TO BE INCLUDED IN APP CONTAINER ###########################################################//
+//#########################################################################################################//
+//#########################################################################################################//
+//#########################################################################################################//
+ -->  
+
+
+
 
   <script type="module">
     import { address, AccountRole, appendTransactionMessageInstructions, createSolanaRpc, createTransactionMessage, getBase64EncodedWireTransaction, getProgramDerivedAddress, generateKeyPairSigner, partiallySignTransactionMessageWithSigners, pipe, setTransactionMessageFeePayer, setTransactionMessageLifetimeUsingBlockhash } from 'https://esm.sh/@solana/kit@8.2.0';
@@ -864,6 +930,80 @@
     async function buildAndExecute() { if (!state.walletAddress) throw new Error('Connect a wallet first'); if (!state.pool) throw new Error('Inspect a Whirlpool first'); if (!state.bundle) throw new Error('Load or initialize a bundle first'); if (!state.bundle.mint) throw new Error('Bundle mint is required'); if (!state.bundle.positions.length) { const count = Math.max(1, Number($('positionCount').value) || Number(state.bundle.numPositions) || 10); log(`Auto-creating ${count} positions...`); await addPositions() } const solToFund = Number($('liquidityFund').value); if (Number.isFinite(solToFund) && solToFund > 0) { const position = requireActiveBundledPosition(); const width = getPositionWidth(); state.bundle.liquidityRequest = { slot: position.index, positionPda: position.pda, lowerTick: position.lowerTick, upperTick: position.upperTick, solToFund, positionWidth: width, requestedAt: new Date().toISOString(), state: 'staged' }; log(`Staged liquidity: ${solToFund} SOL for slot ${position.index}`) } await buildPlan(); await executePlan() }
     document.querySelectorAll('input[name="bundleSource"]').forEach(input => input.addEventListener('change', () => $('existingBundleWrap').classList.toggle('hidden', input.value !== 'existing' || !input.checked))); $('network').addEventListener('change', updateRpc); $('positionCount').addEventListener('input', updateRanges); $('positionWidth').addEventListener('input', updateRanges); $('activeSlot').addEventListener('input', () => { if (state.bundle) { state.bundle.activeSlot = Math.max(0, Math.min(state.bundle.positions.length - 1, Number($('activeSlot').value) || 0)); renderBundle() } }); $('connectWallet').addEventListener('click', openWalletModal); $('closeWalletModal').addEventListener('click', closeWalletModal); $('walletModal').addEventListener('click', event => { if (event.target === $('walletModal')) closeWalletModal() }); $('refreshBalance').addEventListener('click', () => safe(refreshBalance)); $('inspectPool').addEventListener('click', () => safe(inspectPool)); $('initializeBundle').addEventListener('click', () => safe(prepareBundle)); 
     $('loadTxData').addEventListener('click', () => safe(loadTxData)); $('loadBundleBtn').addEventListener('click', () => safe(loadBundle)); $('recenterPositions').addEventListener('click', recenterPositions); $('changePositions').addEventListener('click', changePositions); $('addLiquidity').addEventListener('click', () => safe(addLiquidityToBundledPosition)); $('addPositions').addEventListener('click', () => safe(addPositions)); $('buildAndExecute').addEventListener('click', () => safe(buildAndExecute)); $('buildPlan').addEventListener('click', () => safe(buildPlan)); $('executePlan').addEventListener('click', () => safe(executePlan)); $('audit').addEventListener('click', () => { const panel = $('auditPanel'); const isOpen = panel.classList.toggle('hidden') === false; $('audit').setAttribute('aria-expanded', String(isOpen)) }); $('exportTransaction').addEventListener('click', () => safe(exportTransactionSnapshot)); $('exportPool').addEventListener('click', () => safe(exportPool)); $('exportBundle').addEventListener('click', () => safe(exportState)); $('checkExplorer').addEventListener('click', () => safe(checkSolexplorer)); $('importBundle').addEventListener('change', importState); $('importPool').addEventListener('change', importState); $('toggleMonitor').addEventListener('click', toggleMonitor); refreshWalletSelector(); walletStore.on('register', refreshWalletSelector); await loadConfig();
+  </script>
+  <script>
+    (() => {
+      const shoessold = 100;
+      const secretCode = 'carbonfilter';
+      let clickCount = 0;
+      let typedCommand = '';
+      let unlocked = false;
+      const app = document.querySelector('app');
+      const gate = document.getElementById('content-gate');
+      const backgroundImage = document.getElementById('bg')?.content;
+
+      const unlockGate = () => {
+        unlocked = true;
+        app.style.visibility = 'visible';
+        if (document.body.contains(gate)) {
+          gate.remove();
+        }
+        document.body.classList.remove('locked');
+        observer.disconnect();
+      };
+
+      document.body.classList.add('locked');
+      if (backgroundImage) {
+        gate.style.backgroundImage = `url("${backgroundImage}")`;
+      }
+
+      gate.addEventListener('click', () => {
+        clickCount += 1;
+
+        if (clickCount >= shoessold) {
+          unlockGate();
+        }
+      });
+
+      document.addEventListener('keydown', (event) => {
+        const key = event.key;
+
+        if (key === 'Enter') {
+          if (typedCommand === secretCode) {
+            unlockGate();
+          }
+          typedCommand = '';
+          return;
+        }
+
+        if (key === 'Backspace') {
+          typedCommand = typedCommand.slice(0, -1);
+          return;
+        }
+
+        if (key.length === 1 && /[a-z]/i.test(key)) {
+          typedCommand += key.toLowerCase();
+          if (typedCommand.length > secretCode.length) {
+            typedCommand = typedCommand.slice(-secretCode.length);
+          }
+          return;
+        }
+
+        typedCommand = '';
+      });
+
+      const observer = new MutationObserver(() => {
+        if (!unlocked) {
+          app.style.visibility = 'hidden';
+        }
+        if (!unlocked && !document.body.contains(gate)) {
+          document.body.prepend(gate);
+          document.body.classList.add('locked');
+        }
+      });
+
+      observer.observe(document.body, { childList: true, subtree: true });
+    })();
   </script>
 </body>
 
