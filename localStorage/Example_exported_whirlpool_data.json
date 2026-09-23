@@ -1,0 +1,30 @@
+{
+  "data": {
+    "address": "3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt",
+    "tokenMintA": "So11111111111111111111111111111111111111112",
+    "tokenMintB": "BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k",
+    "tickSpacing": 64,
+    "tickCurrentIndex": -37901,
+    "sqrtPrice": "2773145878104628162",
+    "price": "22.599872",
+    "feeRate": 2000,
+    "liquidity": "759898777701"
+  },
+  "source": "loadpoolinfo.js",
+  "network": "devnet",
+  "rpcEndpoint": "https://rpc.ankr.com/solana_devnet/daff95a27769063045c3b3f28c2cae6cb2ea3c99bea100d9148298526371a16e",
+  "tokenMetadata": {
+    "tokenA": {
+      "symbol": "SOL",
+      "name": "SOL",
+      "decimals": 9,
+      "mint": "So11111111111111111111111111111111111111112"
+    },
+    "tokenB": {
+      "symbol": "devUSDC",
+      "name": "devUSDC",
+      "decimals": 6,
+      "mint": "BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k"
+    }
+  }
+}
